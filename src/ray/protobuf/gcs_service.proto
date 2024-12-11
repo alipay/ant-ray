@@ -818,13 +818,6 @@ service TaskInfoGcsService {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-message ReplicaSet {
-  // The number of replica instances.
-  int32 replicas = 1;
-  // The template id for the replica instances.
-  string template_id = 2;
-}
-
 message CreateOrUpdateVirtualClusterRequest {
   // The virtual cluster id.
   string virtual_cluster_id = 1;

@@ -716,6 +716,13 @@ enum JobExecMode {
   Exclusive = 1;
 }
 
+message ReplicaSet {
+  // The number of replica instances.
+  int32 replicas = 1;
+  // The template id for the replica instances.
+  string template_id = 2;
+}
+
 message NodeInstance {
   // The Hostname address of the node instance.
   string hostname = 1;
@@ -732,8 +739,10 @@ message VirtualClusterTableData {
   string name = 2;
   // The mode of jobs executed in this virtual cluster.
   JobExecMode mode = 3;
+  // The replica set list of the virtual cluster.
+  repeated ReplicaSet replica_set_list = 4;
   // Mapping from node id to it's instance.
-  map<string, NodeInstance> node_instances = 4;
+  map<string, NodeInstance> node_instances = 5;
   // Version number of the last modification to the virtual cluster.
-  uint64 revision = 5;
+  uint64 revision = 6;
 }
