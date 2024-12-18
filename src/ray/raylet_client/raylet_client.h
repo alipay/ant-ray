@@ -18,6 +18,7 @@
 #include <unordered_map>
 #include <vector>
 
+#include "nlohmann/json.hpp"
 #include "ray/common/asio/instrumented_io_context.h"
 #include "ray/common/buffer.h"
 #include "ray/common/bundle_spec.h"
@@ -358,7 +359,10 @@ class RayletClient : public RayletClientInterface {
   /// \param port The port.
   /// \param entrypoint The entrypoint of the driver's job.
   /// \return ray::Status.
-  Status AnnounceWorkerPortForDriver(int port, const std::string &entrypoint);
+  Status AnnounceWorkerPortForDriver(int port,
+                                     const std::string &entrypoint,
+                                     const std::string &virtual_cluster_id,
+                                     nlohmann::json &replica_sets);
 
   /// Tell the raylet that the client has finished executing a task.
   ///

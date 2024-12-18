@@ -706,6 +706,10 @@ message JobTableData {
   optional bool is_running_tasks = 11;
   // Address of the driver that started this job.
   Address driver_address = 12;
+  // Virtual cluster this job belongs to.
+  string virtual_cluster_id = 13;
+  // ReplicaSet this job requires for virtual cluster
+  map<string, int32> replica_sets = 14;
 }
 ///////////////////////////////////////////////////////////////////////////////
 

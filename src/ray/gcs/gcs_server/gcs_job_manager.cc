@@ -121,10 +121,37 @@ void GcsJobManager::HandleAddJob(rpc::AddJobRequest request,
     GCS_RPC_SEND_REPLY(send_reply_callback, reply, status);
   };
 
-  Status status =
-      gcs_table_storage_.JobTable().Put(job_id, mutable_job_table_data, on_done);
-  if (!status.ok()) {
-    on_done(status);
+  auto put_job_table_data = [this, job_id, mutable_job_table_data, on_done]() {
+    Status status =
+        gcs_table_storage_.JobTable().Put(job_id, mutable_job_table_data, on_done);
+    if (!status.ok()) {
+      on_done(status);
+    }
+  };
+
+  ReplicaSets replica_sets;
+  for (const auto &entry : mutable_job_table_data.replica_sets()) {
+    replica_sets[entry.first] = entry.second;
+  }
+
+  if (mutable_job_table_data.replica_sets().size() > 0) {
+    auto callback = [put_job_table_data, on_done, reply](
+                        const Status &status,
+                        std::shared_ptr<rpc::VirtualClusterTableData> data) {
+      if (!status.ok()) {
+        on_done(status);
+        return;
+      }
+      reply->set_virtual_cluster_id(data->id());
+      put_job_table_data();
+    };
+    gcs_virtual_cluster_manager_.CreateJobCluster(
+        mutable_job_table_data.virtual_cluster_id(),
+        job_id.Hex(),
+        replica_sets,
+        callback);
+  } else {
+    put_job_table_data();
   }
 }
 

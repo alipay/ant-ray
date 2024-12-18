@@ -224,9 +224,9 @@ class ExclusiveCluster : public VirtualCluster {
 
   /// Get the job cluster by the job cluster id.
   ///
-  /// \param job_name The name of job to get the job cluster.
+  /// \param job_cluster_id The id of job cluster
   /// \return The job cluster if it exists, otherwise return nullptr.
-  std::shared_ptr<JobCluster> GetJobCluster(const std::string &job_name) const;
+  std::shared_ptr<JobCluster> GetJobCluster(const std::string &job_cluster_id) const;
 
   /// Check if the virtual cluster is in use.
   ///
@@ -291,6 +291,14 @@ class PrimaryCluster : public ExclusiveCluster {
   /// \return The logical cluster if it exists, otherwise return nullptr.
   std::shared_ptr<VirtualCluster> GetLogicalCluster(
       const std::string &logical_cluster_id) const;
+
+  /// Get all virtual clusters
+  ///
+  /// \return The logical clusters
+  const absl::flat_hash_map<std::string, std::shared_ptr<VirtualCluster>>
+      &GetLogicalClusters() const {
+    return logical_clusters_;
+  }
 
   /// Remove logical cluster by the logical cluster id.
   ///

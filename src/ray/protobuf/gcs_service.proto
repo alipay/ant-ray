@@ -26,6 +26,7 @@ message AddJobRequest {
 
 message AddJobReply {
   GcsStatus status = 1;
+  string virtual_cluster_id = 2;
 }
 
 message MarkJobFinishedRequest {

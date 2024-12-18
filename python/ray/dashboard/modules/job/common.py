@@ -428,6 +428,8 @@ class JobSubmitRequest:
     entrypoint_resources: Optional[Dict[str, float]] = None
     # Optional virtual cluster ID for job.
     virtual_cluster_id: Optional[str] = None
+    # Optional replica sets for job.
+    replica_sets: Optional[Dict[str, int]] = None
 
     def __post_init__(self):
         if not isinstance(self.entrypoint, str):
@@ -520,6 +522,23 @@ class JobSubmitRequest:
                 "virtual_cluster_id must be a string if provided, "
                 f"got {type(self.virtual_cluster_id)}"
             )
+
+        if self.replica_sets is not None:
+            if not isinstance(self.replica_sets, dict):
+                raise TypeError(
+                    f"replica_sets must be a dict, got {type(self.replica_sets)}"
+                )
+            else:
+                for k in self.replica_sets.keys():
+                    if not isinstance(k, str):
+                        raise TypeError(
+                            f"replica_sets keys must be strings, got {type(k)}"
+                        )
+                for v in self.replica_sets.values():
+                    if not isinstance(v, int):
+                        raise TypeError(
+                            f"replica_sets values must be integers , got {type(v)}"
+                        )
 
 
 @dataclass

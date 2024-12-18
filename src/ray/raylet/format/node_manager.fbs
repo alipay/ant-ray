@@ -144,11 +144,22 @@ table RegisterClientReply {
   port: int;
 }
 
+table ReplicaSet {
+  // Template id of nodes
+  template_id: string;
+  // Count for nodes of this template
+  count: int;
+}
+
 table AnnounceWorkerPort {
   // Port that this worker is listening on.
   port: int;
   // The entrypoint of the job. Only populated if the worker is a driver.
   entrypoint: string;
+  // The virtual cluster this job belongs to.
+  virtual_cluster_id: string;
+  // Resources requested by this job for virtual cluster allocation.
+  replica_sets: [ReplicaSet];
 }
 
 table AnnounceWorkerPortReply {
@@ -156,6 +167,8 @@ table AnnounceWorkerPortReply {
   success: bool;
   // The reason of registration failure.
   failure_reason: string;
+  // The virtual cluster the job belongs to.
+  virtual_cluster_id: string;
 }
 
 table RegisterNodeManagerRequest {

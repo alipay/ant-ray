@@ -309,5 +309,110 @@ ray.get(a.run.remote())
         assert nassert > 0
 
 
+@pytest.mark.parametrize(
+    "job_sdk_client",
+    [
+        {"_system_config": {"gcs_actor_scheduling_enabled": True}},
+    ],
+    indirect=True,
+)
+@pytest.mark.asyncio
+async def test_job_virtual_cluster(request, job_sdk_client):
+    agent_client, head_client, gcs_address = job_sdk_client
+    virtual_cluster_id = "VIRTUAL_CLUSTER_ID"
+    nodes = await create_virtual_cluster(
+        gcs_address,
+        virtual_cluster_id,
+        {TEMPLATE_ID_PREFIX + str(0): 2, TEMPLATE_ID_PREFIX + str(2): 2},
+        AllocationMode.Exclusive,
+    )
+    assert len(nodes) != 0
+
+    actor_name = "test_actor"
+    remote_actor_name = "test_remote_actor"
+    pg_name = "test_pg_primary"
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        path = Path(tmp_dir)
+        driver_script = """
+import ray
+ray.init(address='auto')
+
+@ray.remote
+class RemoteActor:
+    def __init__(self):
+        pass
+
+    def run(self):
+        pass
+
+
+@ray.remote
+class Actor:
+    def __init__(self):
+        pass
+
+    def run(self):
+        a = RemoteActor.options(name="__remote_actor_name__").remote()
+        ray.get(a.run.remote())
+
+pg = ray.util.placement_group(bundles=[{"CPU": 1}], name="__pg_name__")
+
+a = Actor.options(name="__actor_name__", num_cpus=1).remote()
+ray.get(a.run.remote())
+            """
+        driver_script = (
+            driver_script.replace("__actor_name__", actor_name)
+            .replace("__pg_name__", pg_name)
+            .replace("__remote_actor_name__", remote_actor_name)
+        )
+        test_script_file = path / "test_script.py"
+        with open(test_script_file, "w+") as file:
+            file.write(driver_script)
+
+        runtime_env = {"working_dir": tmp_dir}
+        runtime_env = upload_working_dir_if_needed(runtime_env, tmp_dir, logger=logger)
+        runtime_env = RuntimeEnv(**runtime_env).to_dict()
+
+        request = validate_request_type(
+            {
+                "runtime_env": runtime_env,
+                "entrypoint": "python test_script.py",
+                "virtual_cluster_id": virtual_cluster_id,
+                "replica_sets": {
+                    TEMPLATE_ID_PREFIX + str(0): 1,
+                    TEMPLATE_ID_PREFIX + str(2): 1,
+                },
+            },
+            JobSubmitRequest,
+        )
+        submit_result = await agent_client.submit_job_internal(request)
+        job_id = submit_result.submission_id
+
+        wait_for_condition(
+            partial(
+                _check_job,
+                client=head_client,
+                job_id=job_id,
+                status=JobStatus.SUCCEEDED,
+            ),
+            timeout=100,
+        )
+        actors = ray.state.actors()
+        nassert = 0
+        for _, actor_info in actors.items():
+            if actor_info["Name"] in [actor_name, remote_actor_name]:
+                node_id = actor_info["Address"]["NodeID"]
+                nassert += 1
+                assert node_id in nodes, actor_info
+        assert nassert > 0
+        nassert = 0
+        for _, placement_group_data in ray.util.placement_group_table().items():
+            if placement_group_data["name"] == pg_name:
+                node_id = placement_group_data["bundles_to_node_id"][0]
+                nassert += 1
+                assert node_id in nodes
+        assert nassert > 0
+
+
 if __name__ == "__main__":
     sys.exit(pytest.main(["-v", __file__]))

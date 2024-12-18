@@ -302,9 +302,7 @@ Status ExclusiveCluster::RemoveJobCluster(const std::string &job_name,
 }
 
 std::shared_ptr<JobCluster> ExclusiveCluster::GetJobCluster(
-    const std::string &job_id) const {
-  auto job_cluster_id =
-      VirtualClusterID::FromBinary(GetID()).BuildJobClusterID(job_id).Binary();
+    const std::string &job_cluster_id) const {
   auto iter = job_clusters_.find(job_cluster_id);
   return iter != job_clusters_.end() ? iter->second : nullptr;
 }

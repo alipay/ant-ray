@@ -33,7 +33,7 @@ int64_t GetGcsTimeoutMs() {
 JobInfoAccessor::JobInfoAccessor(GcsClient *client_impl) : client_impl_(client_impl) {}
 
 Status JobInfoAccessor::AsyncAdd(const std::shared_ptr<JobTableData> &data_ptr,
-                                 const StatusCallback &callback) {
+                                 const OptionalItemCallback<std::string> &callback) {
   JobID job_id = JobID::FromBinary(data_ptr->job_id());
   RAY_LOG(DEBUG).WithField(job_id)
       << "Adding job, driver pid = " << data_ptr->driver_pid();
@@ -43,7 +43,7 @@ Status JobInfoAccessor::AsyncAdd(const std::shared_ptr<JobTableData> &data_ptr,
       request,
       [job_id, data_ptr, callback](const Status &status, rpc::AddJobReply &&reply) {
         if (callback) {
-          callback(status);
+          callback(status, reply.virtual_cluster_id());
         }
         RAY_LOG(DEBUG).WithField(job_id) << "Finished adding job, status = " << status
                                          << ", driver pid = " << data_ptr->driver_pid();

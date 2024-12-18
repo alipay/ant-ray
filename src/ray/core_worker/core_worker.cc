@@ -920,12 +920,23 @@ void CoreWorker::Shutdown() {
 }
 
 void CoreWorker::ConnectToRayletInternal() {
+  // get virtual cluster from job env
+  std::string virtual_cluster_id = std::getenv(kEnvVarKeyVirtualClusterID)
+                                       ? std::getenv(kEnvVarKeyVirtualClusterID)
+                                       : "";
+  std::string serialized_replica_sets =
+      std::getenv(kEnvVarKeyReplicaSets) ? std::getenv(kEnvVarKeyReplicaSets) : "{}";
+  json replica_sets = json::parse(serialized_replica_sets);
+
   // Tell the raylet the port that we are listening on.
   // NOTE: This also marks the worker as available in Raylet. We do this at the
   // very end in case there is a problem during construction.
   if (options_.worker_type == WorkerType::DRIVER) {
-    Status status = local_raylet_client_->AnnounceWorkerPortForDriver(
-        core_worker_server_->GetPort(), options_.entrypoint);
+    Status status =
+        local_raylet_client_->AnnounceWorkerPortForDriver(core_worker_server_->GetPort(),
+                                                          options_.entrypoint,
+                                                          virtual_cluster_id,
+                                                          replica_sets);
     RAY_CHECK(status.ok()) << "Failed to announce driver's port to raylet and GCS: "
                            << status;
   } else {
@@ -2174,7 +2185,14 @@ json CoreWorker::OverrideRuntimeEnv(json &child, const std::shared_ptr<json> par
       json env_vars = it.value();
       json merged_env_vars = result_runtime_env["env_vars"];
       for (json::iterator nit = env_vars.begin(); nit != env_vars.end(); ++nit) {
-        merged_env_vars[nit.key()] = nit.value();
+        if (nit.key() == kEnvVarKeyVirtualClusterID) {
+          std::string virtual_cluster_id = std::getenv(kEnvVarKeyVirtualClusterID)
+                                               ? std::getenv(kEnvVarKeyVirtualClusterID)
+                                               : "";
+          merged_env_vars[nit.key()] = virtual_cluster_id;
+        } else {
+          merged_env_vars[nit.key()] = nit.value();
+        }
       }
       result_runtime_env["env_vars"] = merged_env_vars;
     } else {

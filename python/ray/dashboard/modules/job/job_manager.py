@@ -1,5 +1,6 @@
 import asyncio
 import copy
+import json
 import logging
 import os
 import random
@@ -329,6 +330,7 @@ class JobManager:
         submission_id: str,
         resources_specified: bool = False,
         virtual_cluster_id: Optional[str] = None,
+        replica_sets: Optional[Dict[str, int]] = None,
     ) -> Dict[str, Any]:
         """Configure and return the runtime_env for the supervisor actor.
 
@@ -365,6 +367,11 @@ class JobManager:
 
         if virtual_cluster_id is not None:
             env_vars[ray_constants.RAY_VIRTUAL_CLUSTER_ID_ENV_VAR] = virtual_cluster_id
+
+        if replica_sets is not None:
+            env_vars[ray_constants.RAY_VIRTUAL_REPLICA_SETS_ENV_VAR] = json.dumps(
+                replica_sets
+            )
 
         runtime_env["env_vars"] = env_vars
 
@@ -433,6 +440,7 @@ class JobManager:
         runtime_env: Optional[Dict[str, Any]] = None,
         metadata: Optional[Dict[str, str]] = None,
         virtual_cluster_id: Optional[str] = None,
+        replica_sets: Optional[Dict[str, int]] = None,
         entrypoint_num_cpus: Optional[Union[int, float]] = None,
         entrypoint_num_gpus: Optional[Union[int, float]] = None,
         entrypoint_memory: Optional[int] = None,
@@ -544,7 +552,11 @@ class JobManager:
                 resources=entrypoint_resources,
                 scheduling_strategy=scheduling_strategy,
                 runtime_env=self._get_supervisor_runtime_env(
-                    runtime_env, submission_id, resources_specified, virtual_cluster_id
+                    runtime_env,
+                    submission_id,
+                    resources_specified,
+                    virtual_cluster_id,
+                    replica_sets,
                 ),
                 namespace=SUPERVISOR_ACTOR_RAY_NAMESPACE,
             ).remote(

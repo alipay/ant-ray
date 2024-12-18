@@ -205,11 +205,24 @@ Status raylet::RayletClient::AnnounceWorkerPortForWorker(int port) {
   return conn_->WriteMessage(MessageType::AnnounceWorkerPort, &fbb);
 }
 
-Status raylet::RayletClient::AnnounceWorkerPortForDriver(int port,
-                                                         const std::string &entrypoint) {
+Status raylet::RayletClient::AnnounceWorkerPortForDriver(
+    int port,
+    const std::string &entrypoint,
+    const std::string &virtual_cluster_id,
+    nlohmann::json &replica_sets) {
   flatbuffers::FlatBufferBuilder fbb;
-  auto message =
-      protocol::CreateAnnounceWorkerPort(fbb, port, fbb.CreateString(entrypoint));
+  std::vector<flatbuffers::Offset<ray::protocol::ReplicaSet>> replica_set_vector;
+  for (nlohmann::json::iterator it = replica_sets.begin(); it != replica_sets.end();
+       ++it) {
+    auto replica_set =
+        protocol::CreateReplicaSet(fbb, fbb.CreateString(it.key()), (int)it.value());
+    replica_set_vector.push_back(replica_set);
+  }
+  auto message = protocol::CreateAnnounceWorkerPort(fbb,
+                                                    port,
+                                                    fbb.CreateString(entrypoint),
+                                                    fbb.CreateString(virtual_cluster_id),
+                                                    fbb.CreateVector(replica_set_vector));
   fbb.Finish(message);
   std::vector<uint8_t> reply;
   RAY_RETURN_NOT_OK(conn_->AtomicRequestReply(MessageType::AnnounceWorkerPort,
@@ -219,6 +232,8 @@ Status raylet::RayletClient::AnnounceWorkerPortForDriver(int port,
   auto reply_message =
       flatbuffers::GetRoot<protocol::AnnounceWorkerPortReply>(reply.data());
   if (reply_message->success()) {
+    setEnv(kEnvVarKeyVirtualClusterID,
+           string_from_flatbuf(*reply_message->virtual_cluster_id()));
     return Status::OK();
   }
   return Status::Invalid(string_from_flatbuf(*reply_message->failure_reason()));

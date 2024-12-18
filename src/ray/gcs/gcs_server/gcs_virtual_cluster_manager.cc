@@ -48,19 +48,51 @@ bool GcsVirtualClusterManager::ContainsNodeInstance(
   }
   // Check for the node in logical clusters with mixed allocation mode.
   auto logical_cluster = primary_cluster_->GetLogicalCluster(virtual_cluster_id);
-  if (logical_cluster->GetMode() == rpc::AllocationMode::Mixed) {
-    return logical_cluster->ContainsNodeInstance(node_instance_id);
-  } else {
-    // Check if the node is in a job cluster within the logical cluster.
-    ExclusiveCluster *exclusive_cluster =
-        dynamic_cast<ExclusiveCluster *>(logical_cluster.get());
 
-    auto job_cluster = exclusive_cluster->GetJobCluster(virtual_cluster_id);
-    if (job_cluster != nullptr) {
-      return job_cluster->ContainsNodeInstance(node_instance_id);
+  if ((logical_cluster != nullptr) &&
+      (logical_cluster->GetMode() == rpc::AllocationMode::Mixed)) {
+    return logical_cluster->ContainsNodeInstance(node_instance_id);
+  }
+
+  const auto &logical_clusters = primary_cluster_->GetLogicalClusters();
+  for (const auto &[cluster_id, logical_cluster] : logical_clusters) {
+    RAY_LOG(INFO) << "here get one cluster " << cluster_id;
+    if (logical_cluster->GetMode() == rpc::AllocationMode::Exclusive) {
+      RAY_LOG(INFO) << "and here get one cluster " << cluster_id;
+      ExclusiveCluster *exclusive_cluster =
+          dynamic_cast<ExclusiveCluster *>(logical_cluster.get());
+      auto job_cluster = exclusive_cluster->GetJobCluster(virtual_cluster_id);
+      if (job_cluster != nullptr) {
+        return job_cluster->ContainsNodeInstance(node_instance_id);
+      }
     }
   }
+
   return false;
+}
+
+Status GcsVirtualClusterManager::CreateJobCluster(
+    const std::string &virtual_cluster_id,
+    const std::string &job_id,
+    ReplicaSets replica_sets,
+    CreateOrUpdateVirtualClusterCallback callback) {
+  if (virtual_cluster_id == "") {
+    return Status::Invalid("virtual cluster id is empty");
+  }
+  // Check for cases where the primary cluster ID is used.
+  if (virtual_cluster_id == kPrimaryClusterID) {
+    return primary_cluster_->CreateJobCluster(job_id, replica_sets, callback);
+  }
+  auto logical_cluster = primary_cluster_->GetLogicalCluster(virtual_cluster_id);
+  if (logical_cluster == nullptr) {
+    return Status::Invalid("virtual cluster not exists");
+  }
+  if (logical_cluster->GetMode() == rpc::AllocationMode::Mixed) {
+    return Status::Invalid("virtual cluster's allocation mode is not exclusive");
+  }
+  ExclusiveCluster *exclusive_cluster =
+      dynamic_cast<ExclusiveCluster *>(logical_cluster.get());
+  return exclusive_cluster->CreateJobCluster(job_id, replica_sets, callback);
 }
 
 void GcsVirtualClusterManager::HandleCreateOrUpdateVirtualCluster(

@@ -1428,16 +1428,29 @@ void NodeManager::ProcessAnnounceWorkerPortMessage(
                                 worker->GetProcess().GetId(),
                                 string_from_flatbuf(*message->entrypoint()),
                                 *job_config);
+    job_data_ptr->set_virtual_cluster_id(
+        string_from_flatbuf(*message->virtual_cluster_id()));
+    int64_t num_replica_sets = message->replica_sets()->size();
+    for (int64_t i = 0; i < num_replica_sets; i++) {
+      job_data_ptr->mutable_replica_sets()->emplace(
+          string_from_flatbuf(*(message->replica_sets()->Get(i)->template_id())),
+          message->replica_sets()->Get(i)->count());
+    }
 
-    RAY_CHECK_OK(
-        gcs_client_->Jobs().AsyncAdd(job_data_ptr, [this, client](Status status) {
+    RAY_CHECK_OK(gcs_client_->Jobs().AsyncAdd(
+        job_data_ptr,
+        [this, client](Status status,
+                       const std::optional<std::string> &virtual_cluster_id) {
           if (!status.ok()) {
             RAY_LOG(ERROR) << "Failed to add job to GCS: " << status.ToString();
           }
           // Write the reply back.
           flatbuffers::FlatBufferBuilder fbb;
           auto message = protocol::CreateAnnounceWorkerPortReply(
-              fbb, status.ok(), fbb.CreateString(status.ToString()));
+              fbb,
+              status.ok(),
+              fbb.CreateString(status.ToString()),
+              fbb.CreateString(virtual_cluster_id.value_or("")));
           fbb.Finish(message);
 
           client->WriteMessageAsync(

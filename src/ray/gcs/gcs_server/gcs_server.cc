@@ -418,6 +418,7 @@ void GcsServer::InitGcsJobManager(const GcsInitData &gcs_init_data) {
                                                      *gcs_publisher_,
                                                      *runtime_env_manager_,
                                                      *function_manager_,
+                                                     *gcs_virtual_cluster_manager_,
                                                      kv_manager_->GetInstance(),
                                                      client_factory);
   gcs_job_manager_->Initialize(gcs_init_data);

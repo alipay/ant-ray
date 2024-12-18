@@ -51,8 +51,23 @@ class GcsVirtualClusterManager : public rpc::VirtualClusterInfoHandler {
   /// \param node The node that is dead.
   void OnNodeDead(const rpc::GcsNodeInfo &node);
 
+  /// Check if the virtual cluster contains node instance
+  ///
+  /// \param node_instance_id The id of node instance
+  /// \param virtual_cluster_id The id of virtual cluster
   bool ContainsNodeInstance(const std::string &node_instance_id,
                             const std::string &virtual_cluster_id);
+
+  /// Create a job cluster.
+  ///
+  /// \param virtual_cluster_id id of virtual cluster the job belongs to.
+  /// \param job_id The id of job to create the job cluster.
+  /// \param replica_sets The replica sets of the job cluster.
+  /// \return Status The status of the creation.
+  Status CreateJobCluster(const std::string &virtual_cluster_id,
+                          const std::string &job_id,
+                          ReplicaSets replica_sets,
+                          CreateOrUpdateVirtualClusterCallback callback);
 
  protected:
   void HandleCreateOrUpdateVirtualCluster(

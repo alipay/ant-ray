@@ -124,6 +124,8 @@ RAY_RUNTIME_ENV_CREATE_WORKING_DIR_ENV_VAR = "RAY_RUNTIME_ENV_CREATE_WORKING_DIR
 RAY_RUNTIME_ENV_URI_PIN_EXPIRATION_S_DEFAULT = 10 * 60
 # Environment variable to specify the virtual cluster ID a Ray job belongs to.
 RAY_VIRTUAL_CLUSTER_ID_ENV_VAR = "VIRTUAL_CLUSTER_ID"
+# Environment variable to specify the replica sets a Ray job requires.
+RAY_VIRTUAL_REPLICA_SETS_ENV_VAR = "REPLICA_SETS_ENV"
 # If set to 1, then `.gitignore` files will not be parsed and loaded into "excludes"
 # when using a local working_dir or py_modules.
 RAY_RUNTIME_ENV_IGNORE_GITIGNORE = "RAY_RUNTIME_ENV_IGNORE_GITIGNORE"

@@ -238,7 +238,7 @@ class JobInfoAccessor {
   /// to GCS.
   /// \return Status
   virtual Status AsyncAdd(const std::shared_ptr<rpc::JobTableData> &data_ptr,
-                          const StatusCallback &callback);
+                          const OptionalItemCallback<std::string> &callback);
 
   /// Mark job as finished in GCS asynchronously.
   ///

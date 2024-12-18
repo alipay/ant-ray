@@ -319,9 +319,11 @@ TEST_F(PrimaryClusterTest, CreateJobCluster) {
     ASSERT_TRUE(status.ok());
   }
 
-  auto job_cluster_0 = primary_cluster->GetJobCluster(job_id_0);
+  auto job_cluster_id_0 = VirtualClusterID::FromBinary(primary_cluster->GetID())
+                              .BuildJobClusterID(job_id_0)
+                              .Binary();
+  auto job_cluster_0 = primary_cluster->GetJobCluster(job_cluster_id_0);
   ASSERT_NE(job_cluster_0, nullptr);
-  auto job_cluster_id_0 = job_cluster_0->GetID();
   {
     // Check the job cluster job_cluster_id_0 visible node instances.
     const auto &visiable_node_instances = job_cluster_0->GetVisibleNodeInstances();
@@ -367,9 +369,11 @@ TEST_F(PrimaryClusterTest, CreateJobCluster) {
     ASSERT_TRUE(status.ok());
   }
 
-  auto job_cluster_1 = primary_cluster->GetJobCluster(job_id_1);
+  auto job_cluster_id_1 = VirtualClusterID::FromBinary(primary_cluster->GetID())
+                              .BuildJobClusterID(job_id_1)
+                              .Binary();
+  auto job_cluster_1 = primary_cluster->GetJobCluster(job_cluster_id_1);
   ASSERT_NE(job_cluster_1, nullptr);
-  auto job_cluster_id_1 = job_cluster_1->GetID();
   {
     // Check the job cluster job_cluster_id_1 visible node instances.
     const auto &visiable_node_instances = job_cluster_1->GetVisibleNodeInstances();
@@ -442,9 +446,11 @@ TEST_F(PrimaryClusterTest, RemoveJobCluster) {
     ASSERT_TRUE(status.ok());
   }
 
-  auto job_cluster_0 = primary_cluster->GetJobCluster(job_id_0);
+  auto job_cluster_id_0 = VirtualClusterID::FromBinary(primary_cluster->GetID())
+                              .BuildJobClusterID(job_id_0)
+                              .Binary();
+  auto job_cluster_0 = primary_cluster->GetJobCluster(job_cluster_id_0);
   ASSERT_NE(job_cluster_0, nullptr);
-  auto job_cluster_id_0 = job_cluster_0->GetID();
   {
     // Check the job cluster job_cluster_id_0 visible node instances.
     const auto &visiable_node_instances = job_cluster_0->GetVisibleNodeInstances();
@@ -485,7 +491,10 @@ TEST_F(PrimaryClusterTest, RemoveJobCluster) {
           ASSERT_TRUE(data->is_removed());
         });
     ASSERT_TRUE(status.ok());
-    ASSERT_EQ(primary_cluster->GetJobCluster(job_id_0), nullptr);
+    auto job_cluster_id_0 = VirtualClusterID::FromBinary(primary_cluster->GetID())
+                                .BuildJobClusterID(job_id_0)
+                                .Binary();
+    ASSERT_EQ(primary_cluster->GetJobCluster(job_cluster_id_0), nullptr);
   }
 
   {
