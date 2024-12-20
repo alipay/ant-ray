@@ -519,8 +519,14 @@ void PrimaryCluster::GetVirtualClustersData(rpc::GetVirtualClustersRequest reque
   std::vector<std::shared_ptr<rpc::VirtualClusterTableData>> virtual_cluster_data_list;
   auto virtual_cluster_id = request.virtual_cluster_id();
   bool include_job_clusters = request.include_job_clusters();
+  bool only_include_mixed_cluster = request.only_include_mixed_clusters();
 
   auto visit_proto_data = [&](const VirtualCluster *cluster) {
+    if (only_include_mixed_cluster &&
+        cluster->GetMode() == rpc::AllocationMode::EXCLUSIVE) {
+      return;
+    }
+
     if (include_job_clusters && cluster->GetMode() == rpc::AllocationMode::EXCLUSIVE) {
       auto exclusive_cluster = dynamic_cast<const ExclusiveCluster *>(cluster);
       exclusive_cluster->ForeachJobCluster(

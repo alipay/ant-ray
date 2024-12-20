@@ -58,7 +58,7 @@ class VirtualClusterTest : public ::testing::Test {
     for (size_t i = 0; i < node_count; ++i) {
       auto node = Mocker::GenNodeInfo();
       auto template_id = std::to_string(i % template_count);
-      node->set_template_id(template_id);
+      node->set_node_type_name(template_id);
       primary_cluster->OnNodeAdd(*node);
       if (template_id_to_nodes != nullptr) {
         (*template_id_to_nodes)[template_id].emplace(NodeID::FromBinary(node->node_id()),
